@@ -109,6 +109,8 @@ public class Main {
 			String[] idArray = {"id", id};
 			stmtId.setContents(idArray);
 			TreeNode stmtExpr = program.new TreeNode();
+			curNode.addChild(stmtId);
+			curNode.addChild(stmtExpr);
 			stmtExpr.setParent(curNode);
 			String[] exprArray = {"expr", expr};
 			stmtExpr.setContents(exprArray);
@@ -123,6 +125,7 @@ public class Main {
 				String termString = ((String[]) curNode.getContents())[1];
 				String[] termArray = {"term", termString};
 				TreeNode singleTerm = program.new TreeNode();
+				curNode.addChild(singleTerm);
 				singleTerm.setParent(curNode);
 				singleTerm.setContents(termArray);
 				// recursively parse <term> of current <expr>
@@ -139,6 +142,7 @@ public class Main {
 				}
 				String[] opArray = {"op", opString};
 				TreeNode opNode = program.new TreeNode();
+				curNode.addChild(opNode);
 				opNode.setParent(curNode);
 				opNode.setContents(opArray);
 				// and *now* split on '+' or '-' as delimiter(s) and parse them multiple-y
@@ -151,6 +155,7 @@ public class Main {
 					String currentTermString = curTerm;
 					String[] currentTermArray = {"term", currentTermString};
 					TreeNode currentTerm = program.new TreeNode();
+					curNode.addChild(currentTerm);
 					currentTerm.setParent(curNode);
 					currentTerm.setContents(currentTermArray);
 					// recursively parse <term> of current <expr>
@@ -166,6 +171,7 @@ public class Main {
 				String factorString = ((String[]) curNode.getContents())[1];
 				String[] factorArray = {"factor", factorString};
 				TreeNode singleFactor = program.new TreeNode();
+				curNode.addChild(singleFactor);
 				singleFactor.setParent(curNode);
 				singleFactor.setContents(factorArray);
 				// recursively parse <factor> of current <term>
@@ -182,6 +188,7 @@ public class Main {
 				}
 				String[] opArray = {"op", opString};
 				TreeNode opNode = program.new TreeNode();
+				curNode.addChild(opNode);
 				opNode.setParent(curNode);
 				opNode.setContents(opArray);
 				// and *now* split on '*' or '/' as delimiter(s) and parse them multiple-y
@@ -194,6 +201,7 @@ public class Main {
 					String currentFactorString = curFac;
 					String[] currentFactorArray = {"factor", currentFactorString};
 					TreeNode currentFactor = program.new TreeNode();
+					curNode.addChild(currentFactor);
 					currentFactor.setParent(curNode);
 					currentFactor.setContents(currentFactorArray);
 					// recursively parse <factor> of current <term>
@@ -207,6 +215,7 @@ public class Main {
 				int intnum = Integer.parseInt(((String[]) curNode.getContents())[1]);
 				Object[] intArray = {"int", intnum};
 				TreeNode intNode = program.new TreeNode();
+				curNode.addChild(intNode);
 				intNode.setParent(curNode);
 				intNode.setContents(intArray);
 			}
@@ -215,6 +224,7 @@ public class Main {
 				String idName = ((String[]) curNode.getContents())[1];
 				String[] idNameArray = {"id", idName};
 				TreeNode idNameNode = program.new TreeNode();
+				curNode.addChild(idNameNode);
 				idNameNode.setParent(curNode);
 				idNameNode.setContents(idNameArray);
 			}
@@ -223,14 +233,13 @@ public class Main {
 				String exprString = ((String[]) curNode.getContents())[1].replaceAll("\\(", "").replaceAll("\\)", "").trim();
 				// create subtree as appropriate, linking child to parent and setting proper contents
 				TreeNode nestedExpr = program.new TreeNode();
+				curNode.addChild(nestedExpr);
 				nestedExpr.setParent(curNode);
 				String[] nestedExprArray = {"expr", exprString};
 				nestedExpr.setContents(nestedExprArray);
 				// recursively parse nested <expr> substring
 				parse(nestedExpr, program);
 			}
-			break;
-		case "id":
 			break;
 		default:
 			System.out.println("Syntax error parsing contents:");
