@@ -92,7 +92,11 @@ public class Main {
 			System.out.println(ex.toString());
 		}
 		
-		// TODO: compile tree to SIC
+		for (TreeNode currentStmt : stmtListTree.getChildren()) {
+			// for each statement (<stmt>), compile it left-recursively
+			compile(currentStmt, prog);
+		}
+		
 		// TODO: iterate over id leaves and append them as `[id] RESW 1` lines to SIC output
 	}
 	
@@ -245,5 +249,9 @@ public class Main {
 			System.out.println("Syntax error parsing contents:");
 			System.out.println(curNode.getContents().toString());
 		}
+	}
+	
+	public static void compile(TreeNode curNode, Main program) {
+		// TODO: implement compilation method
 	}
 }
