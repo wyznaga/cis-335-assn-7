@@ -96,6 +96,9 @@ public class Main {
 			compile(currentStmt, prog);
 		}
 		
+		// DEBUG: basically a NOP for breakpoint anchoring
+		System.out.println("");
+		
 		// TODO: iterate over id leaves and append them as `[id] RESW 1` lines to SIC output
 	}
 	
@@ -105,7 +108,7 @@ public class Main {
 			// parse id as first substring of current <stmt> before '='
 			String id = ((String[]) curNode.getContents())[1].substring(0, (((String[]) curNode.getContents())[1].indexOf('='))).trim();
 			// parse expr as substring from after " = " to end of string of <stmt>
-			String expr = ((String[]) curNode.getContents())[1].substring((((String[]) curNode.getContents())[1].indexOf('='))).trim();
+			String expr = ((String[]) curNode.getContents())[1].substring(((String[]) curNode.getContents())[1].indexOf('=') + 2).trim();
 			// create subtrees as appropriate, linking children to parents and setting proper contents
 			TreeNode stmtId = program.new TreeNode();
 			stmtId.setParent(curNode);
@@ -252,5 +255,6 @@ public class Main {
 	
 	public static void compile(TreeNode curNode, Main program) {
 		// TODO: implement compilation method
+		;;
 	}
 }
