@@ -96,9 +96,6 @@ public class Main {
 			compile(currentStmt, prog);
 		}
 		
-		// DEBUG: basically a NOP for breakpoint anchoring
-		System.out.println("");
-		
 		// TODO: iterate over id leaves and append them as `[id] RESW 1` lines to SIC output
 	}
 	
@@ -255,6 +252,5 @@ public class Main {
 	
 	public static void compile(TreeNode curNode, Main program) {
 		// TODO: implement compilation method
-		;;
 	}
 }
