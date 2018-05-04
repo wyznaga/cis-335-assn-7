@@ -7,6 +7,16 @@ import java.io.BufferedWriter;
 
 public class Main {
 
+	public ArrayList<String> outputLines;
+	public ArrayList<String> varLines;
+	public int tempVarCounter;
+	
+	public Main() {
+		this.outputLines = new ArrayList<String>();
+		this.varLines = new ArrayList<String>();
+		this.tempVarCounter = 0;
+	}
+	
 	// define usable tree node class for modeling recursive-descent parse tree
 	class TreeNode {
 		private ArrayList<TreeNode> children;
@@ -96,7 +106,8 @@ public class Main {
 			compile(currentStmt, prog);
 		}
 		
-		// TODO: iterate over id leaves and append them as `[id] RESW 1` lines to SIC output
+		// TODO: write output to file
+		// TODO: ? close all Buffer/File handles ?
 	}
 	
 	public static void parse(TreeNode curNode, Main program) {
@@ -251,6 +262,107 @@ public class Main {
 	}
 	
 	public static void compile(TreeNode curNode, Main program) {
-		// TODO: implement compilation method
+		switch(((String[]) curNode.getContents())[0]) {
+		case "stmt":
+			// TODO: finish implementing compilation of <stmt>s
+			break;
+		case "expr":
+			// if curNode has siblings (parent's children array size > 1):
+				// then recursively compile all <term> subtrees/elements
+			// else just recursively compile the one current factor
+			
+			if (curNode.getParent().getChildren().size() > 1) {
+				int curNodeIdx = 0;
+				for (TreeNode currentTerm : curNode.getParent().getChildren()) {
+					if (curNodeIdx < (curNode.getParent().getChildren().size() - 1)) {
+						// if not on last term in expr:
+							// recursively compile <term>
+							// then insert appropriate operation symbol between terms
+						for (TreeNode currentSibling : curNode.getParent().getChildren()) {
+							if (((String[])currentSibling.getContents())[0] == "op") {
+								switch (((String[])currentSibling.getContents())[1]) {
+								case "+":
+									Main.compile(currentTerm, program);
+									// TODO: complete ADD actually having an operand
+									program.outputLines.add("ADD ");
+									break;
+								case "-":
+									Main.compile(currentTerm, program);
+									// TODO: complete SUB actually having an operand
+									program.outputLines.add("SUB ");
+									break;
+								}
+							}
+						}
+					}
+					curNodeIdx++;
+				}
+			}
+			else {
+				Main.compile(curNode, program);
+			}
+			break;
+		case "term":
+			// if curNode has siblings (parent's children array size > 1):
+				// then recursively compile all <factor> subtrees/elements
+			// else just recursively compile the one current factor
+			
+			if (curNode.getParent().getChildren().size() > 1) {
+				int curNodeIdx = 0;
+				for (TreeNode currentFactor : curNode.getParent().getChildren()) {
+					if (curNodeIdx < (curNode.getParent().getChildren().size() - 1)) {
+						// if not on last factor in term:
+							// recursively compile <factor>
+							// then insert appropriate operation symbol between factors
+						for (TreeNode currentSibling : curNode.getParent().getChildren()) {
+							if (((String[])currentSibling.getContents())[0] == "op") {
+								switch (((String[])currentSibling.getContents())[1]) {
+								case "*":
+									Main.compile(currentFactor, program);
+									// TODO: complete MUL actually having an operand
+									program.outputLines.add("MUL ");
+									break;
+								case "/":
+									Main.compile(currentFactor, program);
+									// TODO: complete DIV actually having an operand
+									program.outputLines.add("DIV ");
+									break;
+								}
+							}
+						}
+					}
+					curNodeIdx++;
+				}
+			}
+			else {
+				Main.compile(curNode, program);
+			}
+			break;
+		case "factor":
+			if (((String[]) curNode.getContents())[0] == "id") { // id leaf node
+				// <id>s need only be loaded
+				program.outputLines.add("LDA " + ((String[]) curNode.getContents())[1]);
+				// also, if id not yet present in varLines, add this id to it
+				if (!(program.varLines.contains(((String[]) curNode.getContents())[1]))) {
+					program.varLines.add(((String[]) curNode.getContents())[1]);
+				}
+			}
+			else if (((String[]) curNode.getContents())[0] == "int") { // int(num) leaf node
+				// intnum literals need only be loaded
+				String intnumString = ((Object[]) curNode.getContents())[1].toString();
+				program.outputLines.add("LDA #" + intnumString);
+			}
+			else if (((String[]) curNode.getContents())[0] == "expr") { // new <expr> subtree
+				// add another T<N> temporary variable to what will be the final output
+				program.varLines.add("T" + (new Integer(program.tempVarCounter)).toString());
+				program.tempVarCounter++;
+				// recursively compile
+				Main.compile(curNode, program);
+			}
+			break;
+		default:
+			System.out.println("Syntax error compiling input code:");
+			System.out.println(curNode.getContents().toString());
+		}
 	}
 }
