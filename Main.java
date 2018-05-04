@@ -90,7 +90,7 @@ public class Main {
 			parse(currentStmt, prog);
 		}
 		
-		File outputFile;
+		File outputFile = null;
 		try { // try to create a blank output file
 			// make the output filename equal to [inputFilename - '.[extension]] + ".asm"
 			outputFile = new File(inputFilename.replaceAll("\\..*", ".asm"));
@@ -106,8 +106,27 @@ public class Main {
 			compile(currentStmt, prog);
 		}
 		
-		// TODO: write output to file
-		// TODO: ? close all Buffer/File handles ?
+		try { // try to write to output file line by line
+			FileWriter outputFileWriter = new FileWriter(outputFile.getName());
+			BufferedWriter outputBuf = new BufferedWriter(outputFileWriter);
+			for (String currentCodeLine : prog.outputLines) {
+				outputBuf.write(currentCodeLine);
+				outputBuf.write("\n");
+			}
+			outputBuf.write("\n");
+			for (String varLine : prog.varLines) {
+				outputBuf.write(varLine + "    RESW 1");
+				outputBuf.write("\n");
+			}
+			outputBuf.close();
+			outputFileWriter.close();
+		}
+		catch (Exception ex) {
+			System.out.println("Could not write to file " + outputFile.getName() + "; exiting due to exception:");
+			System.out.println(ex.toString());
+		}
+		
+		// execution finished
 	}
 	
 	public static void parse(TreeNode curNode, Main program) {
@@ -135,7 +154,7 @@ public class Main {
 			// first determine if expr **DOES NOT** contain '+' or '-'
 			// if not (if the negation is the true case), assume a single <term> is present and parse it alone
 			// if so (if the negation of the negation is the true case), split on those individual terms and parse each
-			if (!(((String[]) curNode.getContents())[1].matches("^.*[\\*\\/]+.*$"))) {
+			if (!(((String[]) curNode.getContents())[1].matches("^.*[\\+\\-]+.*$"))) {
 				String termString = ((String[]) curNode.getContents())[1];
 				String[] termArray = {"term", termString};
 				TreeNode singleTerm = program.new TreeNode();
@@ -161,7 +180,7 @@ public class Main {
 				opNode.setContents(opArray);
 				// and *now* split on '+' or '-' as delimiter(s) and parse them multiple-y
 					// (since we have now saved the information of what the actual op used was)
-				String[] terms = ((String[]) curNode.getContents())[1].split("\\*|\\/");
+				String[] terms = ((String[]) curNode.getContents())[1].split("\\+|\\-");
 				for (String curTerm : terms) {
 					// trim leading and trailing whitespace around terms
 					curTerm = curTerm.trim();
@@ -256,29 +275,42 @@ public class Main {
 			}
 			break;
 		default:
+			System.out.println("");
 			System.out.println("Syntax error parsing contents:");
-			System.out.println(curNode.getContents().toString());
+			for (String elem : ((String[]) curNode.getContents())) {
+				System.out.print(elem + " ");
+			}
 		}
 	}
 	
 	public static void compile(TreeNode curNode, Main program) {
 		switch(((String[]) curNode.getContents())[0]) {
 		case "stmt":
-			// TODO: finish implementing compilation of <stmt>s
+			// recursively compile child <expr> (should only be one <expr>-type child, at index 1)
+			// then write to assembly the storing of the result in this <stmt>'s id
+			TreeNode exprChild = curNode.getChildren().get(1);
+			Main.compile(exprChild, program);
+			String stmtId = "";
+			for (TreeNode childNode : curNode.getChildren()) {
+				if (((String[]) childNode.getContents())[0] == "id") {
+					stmtId = ((String[]) childNode.getContents())[1];
+				}
+			}
+			program.outputLines.add("STA " + stmtId);
 			break;
 		case "expr":
-			// if curNode has siblings (parent's children array size > 1):
+			// if curNode multiple children (parent's children array size > 1):
 				// then recursively compile all <term> subtrees/elements
 			// else just recursively compile the one current factor
 			
-			if (curNode.getParent().getChildren().size() > 1) {
+			if (curNode.getChildren().size() > 1) {
 				int curNodeIdx = 0;
-				for (TreeNode currentTerm : curNode.getParent().getChildren()) {
-					if (curNodeIdx < (curNode.getParent().getChildren().size() - 1)) {
+				for (TreeNode currentTerm : curNode.getChildren()) {
+					if (curNodeIdx < (curNode.getChildren().size() - 1)) {
 						// if not on last term in expr:
 							// recursively compile <term>
 							// then insert appropriate operation symbol between terms
-						for (TreeNode currentSibling : curNode.getParent().getChildren()) {
+						for (TreeNode currentSibling : curNode.getChildren()) {
 							if (((String[])currentSibling.getContents())[0] == "op") {
 								switch (((String[])currentSibling.getContents())[1]) {
 								case "+":
@@ -299,22 +331,22 @@ public class Main {
 				}
 			}
 			else {
-				Main.compile(curNode, program);
+				Main.compile(curNode.getChildren().get(0), program);
 			}
 			break;
 		case "term":
-			// if curNode has siblings (parent's children array size > 1):
+			// if curNode has multiple children (parent's children array size > 1):
 				// then recursively compile all <factor> subtrees/elements
 			// else just recursively compile the one current factor
 			
-			if (curNode.getParent().getChildren().size() > 1) {
+			if (curNode.getChildren().size() > 1) {
 				int curNodeIdx = 0;
-				for (TreeNode currentFactor : curNode.getParent().getChildren()) {
-					if (curNodeIdx < (curNode.getParent().getChildren().size() - 1)) {
+				for (TreeNode currentFactor : curNode.getChildren()) {
+					if (curNodeIdx < (curNode.getChildren().size() - 1)) {
 						// if not on last factor in term:
 							// recursively compile <factor>
 							// then insert appropriate operation symbol between factors
-						for (TreeNode currentSibling : curNode.getParent().getChildren()) {
+						for (TreeNode currentSibling : curNode.getChildren()) {
 							if (((String[])currentSibling.getContents())[0] == "op") {
 								switch (((String[])currentSibling.getContents())[1]) {
 								case "*":
@@ -335,34 +367,49 @@ public class Main {
 				}
 			}
 			else {
-				Main.compile(curNode, program);
+				Main.compile(curNode.getChildren().get(0), program);
 			}
 			break;
 		case "factor":
-			if (((String[]) curNode.getContents())[0] == "id") { // id leaf node
-				// <id>s need only be loaded
-				program.outputLines.add("LDA " + ((String[]) curNode.getContents())[1]);
-				// also, if id not yet present in varLines, add this id to it
-				if (!(program.varLines.contains(((String[]) curNode.getContents())[1]))) {
-					program.varLines.add(((String[]) curNode.getContents())[1]);
+		case "id":
+		case "int":
+		case "op":
+			if (!(curNode.getChildren().isEmpty())) {
+				Object[] baseContents = (Object[]) curNode.getChildren().get(0).getContents();
+				String baseContentsNodeType = (String) baseContents[0];
+				if (baseContentsNodeType == "id") { // id leaf node
+					// <id>s need only be loaded
+					program.outputLines.add("LDA " + (String) baseContents[1]);
+					// also, if id not yet present in varLines, add this id to it
+					if (!(program.varLines.contains(((String[]) curNode.getContents())[1]))) {
+						program.varLines.add((String) baseContents[1]);
+					}
 				}
-			}
-			else if (((String[]) curNode.getContents())[0] == "int") { // int(num) leaf node
-				// intnum literals need only be loaded
-				String intnumString = ((Object[]) curNode.getContents())[1].toString();
-				program.outputLines.add("LDA #" + intnumString);
-			}
-			else if (((String[]) curNode.getContents())[0] == "expr") { // new <expr> subtree
-				// add another T<N> temporary variable to what will be the final output
-				program.varLines.add("T" + (new Integer(program.tempVarCounter)).toString());
-				program.tempVarCounter++;
-				// recursively compile
-				Main.compile(curNode, program);
+				else if (baseContentsNodeType == "int") { // int(num) leaf node
+					// intnum literals need only be loaded
+					String intnumString = ((Integer) baseContents[1]).toString();
+					program.outputLines.add("LDA #" + intnumString);
+				}
+				else if (baseContentsNodeType == "expr") { // new <expr> subtree
+					// add another T<N> temporary variable to what will be the final output
+					program.varLines.add("T" + (new Integer(program.tempVarCounter)).toString());
+					program.tempVarCounter++;
+					// recursively compile
+					Main.compile(curNode.getChildren().get(0), program);
+				}
+				else if (baseContentsNodeType == "op") {
+					;; // do nothing with "op" nodes as their contents are already handled above
+						// to determine whether ADD, SUB, MUL, or DIV will be added to the compiled
+						// SIC/XE (pseudo)code
+				}
 			}
 			break;
 		default:
+			System.out.println("");
 			System.out.println("Syntax error compiling input code:");
-			System.out.println(curNode.getContents().toString());
+			for (String elem : ((String[]) curNode.getContents())) {
+				System.out.print(elem + " ");
+			}
 		}
 	}
 }
