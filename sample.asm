@@ -1,0 +1,18 @@
+LDA #5
+STA X
+MUL 
+LDA #4
+MUL 
+STA Y
+ADD 
+MUL 
+LDA X
+MUL 
+ADD 
+LDA Y
+ADD 
+STA Z
+
+X    RESW 1
+T0    RESW 1
+Y    RESW 1
